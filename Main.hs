@@ -92,7 +92,7 @@ listaMethod (c:cs) env = let
 						  in (listaMethod cs newEnv)
 listaMethod [] env = env
 
--- ===============================================================
+-- ==============================================================
 -- recursao inicial para verificar cada classe e criar os environments
 verificaClasse :: CBody -> [Decl] -> Decl
 verificaClasse (ClassBody name ext imp vars meth) env = let {
