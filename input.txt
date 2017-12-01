@@ -1,0 +1,23 @@
+{  
+	class Observable {
+		int y = 2;
+		void m (int x){
+			return x
+		}
+	}
+	class A { 
+		boole x = true;
+		int methodA ( int paramA ){ 
+			boole x = true;
+			int y = 14;
+			return y
+		}
+	}
+	class B extends A { 
+		boole y = false;
+		int methodB( int paramB ){
+			this.methodA(2);
+			return false
+		}
+	}
+}
