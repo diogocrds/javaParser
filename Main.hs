@@ -23,14 +23,14 @@ criaDeclParams [] = []
 -- verifica se uma variavel esta declarada no environment
 verificaVar :: String -> [Decl] -> Bool
 verificaVar var ((VarDecl declT decl):cs) = if (var == decl) then True else (verificaVar var cs)
-verificaVar var ((ClassDecl _ _ _ _ _):cs) = (verificaVar var cs)
+verificaVar var ((ClassDecl _ _ _ _):cs) = (verificaVar var cs)
 verificaVar var ((InterfDecl _ _ _):cs) = (verificaVar var cs)
 verificaVar _ [] = False
 
 -- procura e retorna o tipo de uma variavel no environment
 procuraVar :: String -> [Decl] -> T
 procuraVar var ((VarDecl declT decl):cs) = if (var == decl) then declT else (procuraVar var cs)
-procuraVar var ((ClassDecl _ _ _ _ _):cs) = (procuraVar var cs)
+procuraVar var ((ClassDecl _ _ _ _):cs) = (procuraVar var cs)
 procuraVar var ((InterfDecl _ _ _):cs) = (procuraVar var cs)
 procuraVar _ [] = error "ERRO: Variavel nao declarada"
 
@@ -45,7 +45,7 @@ typeOf TFalse envG envL = Boole
 -- ===============================================================
 -- verifica o stmt e retorna declaracao se for nova variavel
 verificaStmt :: Stmt -> [Decl] -> [Decl] -> [Decl]
-verificaStmt (VarA (Att varT var expr)) envG envL = [(VarDecl varT var)]
+verificaStmt (VarAtt (Att varT var expr)) envG envL = [(VarDecl varT var)]
 verificaStmt (Stmt (Expr var)) envG envL = if (verificaVar var envL)==False then
 											    error ("ERRO: Variavel "++var++" nao declarada")
 										     else []
@@ -95,14 +95,14 @@ listaMethod [] env = env
 -- ==============================================================
 -- recursao inicial para verificar cada classe e criar os environments
 verificaClasse :: CBody -> [Decl] -> Decl
-verificaClasse (ClassBody name ext imp vars meth) env = let {
+verificaClasse (ClassBody name ext vars meth) env = let {
                                                       declMeth = (criaDeclMeths meth);
 													  vMethods = (listaMethod meth env);
-													  vClasse = (elem (ClassDecl name ext imp [] declMeth) env);
+													  vClasse = (elem (ClassDecl name ext [] declMeth) env);
 												    } in 
 													  if ((length vMethods) >= 0) then
 													     if vClasse==False then
-                                                            (ClassDecl name ext imp [] declMeth)
+                                                            (ClassDecl name ext [] declMeth)
 												         else
 												            error ("Classe '"++name++"' ja existente.")
 													  else error "ERRO: problema lista METHOD"

@@ -29,6 +29,7 @@ import Data.String
     ','                {TokenComma}
 	
     "class"              {TokenClass}
+    "//"              {TokenBreakClass}
     "extends"              {TokenExt}
     "implements"            {TokenImpl}
     "is"              {TokenIs}
@@ -83,31 +84,35 @@ Prog 		: '{' ClassList '}'										{ Prog $2 }
 ClassList1	: ClassBody ClassList1 									{ $1 : $2 }
 			| {- empty -}											{ [] }
 ClassList	: ClassList1 											{ ClassList $1 }
-ClassBody 	: "class" var ClassExt ClassImpl '{' VarList MethodList '}'		{ ClassBody $2 $3 $4 $6 $7 }
+ClassBody 	: "class" var ClassExt '{' VarList MethodList '}'		{ ClassBody $2 $3 $5 $6 }
 
 Att 		: T1 var '=' Expr 										{ Att $1 $2 $4 }
-VarList		: {- empty -}											{ [] }
-			| VarList1												{ $1 }
-VarList1	: Att ';'												{ [$1] }
-			| Att ';' VarList										{ $1:$3 }
+VarList		: VarList1												{ $1 }
+VarList1	: {- empty -}											{ [] }
+			| VarList1 Att ';'										{ $2:$1 }
 
 ClassExt	: "extends" var											{ $2 }
 			| {- empty -}											{ "" }
-ClassImpl	: "implements" ClassImplList							{ $2 }
-			| {- empty -}											{ [] }
-ClassImplList: var													{ [$1] }
-			| var ',' ClassImplList									{ $1 : $3 }
+--ClassImpl	: "implements" ClassImplList							{ $2 }
+--			| {- empty -}											{ [] }
+--ClassImplList: var													{ [$1] }
+---			| var ',' ClassImplList									{ $1 : $3 }
 
 
 -- Lista de MethBody
-MethodList1	: MethodList1 MethBody 									{ $2 : $1 }
+MethodList1	: MethBody MethodList1 									{ $1 : $2 }
 			| {- empty -}											{ [] }
 MethodList	: MethodList1 											{ $1 }
-MethBody 	: T var '(' MethParams ')' '{' Stmts "return" Expr '}'	{ MethBody $1 $2 $4 $7 $9 }
+--MethBody 	: T var '(' MethParams ')' '{' Stmts "return" Expr ';' '}'	{ MethBody $1 $2 $4 $7 $9 }
+MethBody 	: var '(' MethParams ')' '{' Stmts MethReturn'}'  { MethBody (IntType) $1 $3 $6 $7 }
+
+MethReturn	: "return" Expr ';'	{ $2 }
+			| {- empty -} 		{ TReturn }
 
 -- Lista de Parameters do Método
-MethParams1 : Param 							{ [$1] }
-			| Param ',' MethParams1				{ $1 : $3 }
+MethParams1 : Param ',' MethParams1				{ $1 : $3 }
+			| Param								{ [$1] }
+			| {- empty -}						{ [] }
 MethParams 	: MethParams1						{ $1 }
 Param		: T var								{ Param $1 $2 } 
 
@@ -116,8 +121,8 @@ Stmts1		: Stmt ';' Stmts1					{ $1 : $3 }
 			| {- empty -}						{ [] }
 Stmts		: Stmts1							{ $1 }
 Stmt		: Expr 								{ Stmt $1 } 
-			| "if" Value "then" Stmts "else" Stmts { If $2 $4 $6 }
-			| Att								{ VarA $1 }
+			| "if" '(' Value ')' "then" '{' Stmts '}' "else" '{' Stmts '}' { If $3 $7 $11 }
+			| Att								{ VarAtt $1 }
 
 Expr		: Var								{ $1 }
 			| Value								{ $1 }
@@ -161,7 +166,7 @@ data Prog		= Prog ClassList
                 deriving (Show, Eq)
 data ClassList	= ClassList [CBody]
                 deriving (Show, Eq)
-data CBody	 	= ClassBody String String [String] [Att] [MBody]
+data CBody	 	= ClassBody String String [Att] [MBody]
                 deriving (Show, Eq)
 data MethodList	= MethodList [MBody]
                 deriving (Show, Eq)
@@ -172,7 +177,7 @@ data MethParams	= MethParams [Param]
 data Param	 	= Param T String
                 deriving (Show, Eq)
 data Stmt	 	= Stmt Expr
-				| VarA Att
+				| VarAtt Att
                 | If Expr [Stmt] [Stmt]
                 deriving (Show, Eq)
 data Att		= Att T String Expr
@@ -184,12 +189,13 @@ data Expr		= Expr String
 				| Acc Expr String
 				| TTrue
 				| TFalse
+				| TReturn
                 deriving (Show, Eq)
 
 data Env		= Env [Decl]
                 deriving (Show, Eq)
 				
-data Decl 		= ClassDecl String String [String] [(String,T)] [(String,T)]
+data Decl 		= ClassDecl String String [(String,T)] [(String,T)]
 				| InterfDecl String [String] [(String,T)]
 				| VarDecl T String
                 deriving (Show, Eq)
@@ -220,6 +226,7 @@ data Token        = TokenVar String
 				| TokenProg
 				| TokenExt
 				| TokenClass
+				| TokenBreakClass
 				| TokenImpl
 				| TokenIs
 				| TokenDotComma
