@@ -19,11 +19,15 @@ import Data.String
     '{'                { TokenOC }
     '}'                { TokenCC }
     '='                 { TokenColon}
-    '>'                { TokenArrow }
-    boole               { TokenBoole }
+    '<'                { TokenLArrow }
+    '>'                { TokenRArrow }
+    "boole"               { TokenBoole }
     "int"               { TokenIntT }
     "char"               { TokenCharT }
     "void"               { TokenVoidT }
+    --"Observableint"               { TokenObsIntT }
+    --"Observablechar"               { TokenObsCharT }
+    --"Observableboole"               { TokenObsBooleT }
     '+'                 {TokenPlus}
     ';'                {TokenDotComma}
     ','                {TokenComma}
@@ -41,6 +45,7 @@ import Data.String
 	"this" 				{TokenThis}
 	"true" 				{TokenTrue}
 	"false" 				{TokenFalse}
+	"Observable" 				{TokenObservable}
 
 %%
 
@@ -131,9 +136,11 @@ Var			: var								{ Expr $1 }
 			| "this"							{ This }
 			| Var '.' var						{ Acc $1 $3 }
 			| Var '.' var '(' MethCallList ')'	{ MethCall $1 $3 $5 }
+			| var '(' MethCallList ')'			{ MethCall This $1 $3 }
 
 MethCallList: Expr						{ [$1] }
 			| Expr ',' MethCallList		{ $1 : $3 }
+			| {- empty -}				{ [] }
 			
 BoolValue	: "true"							{ TTrue }
 			| "false"							{ TFalse }
@@ -144,17 +151,21 @@ Value		: number							{ Int $1 }
 -- Tipos aceitos		 
 listT 	 : T1 listT								{ $1 : $2 }
 		| {- empty -}							{ [] }
-T1 		 : boole                                { Boole }
+T1 		 : "boole"                                { Boole }
 		| "int"									{ IntType }
 		| "char"								{ CharType }
 		| "void"								{ VoidType }
+		| ObsType								{ $1 }
 T        : listT '>' T                          { FuncType $1 $3 }
-        | boole                                 { Boole }
+        | "boole"                                 { Boole }
 		| "int"									{ IntType }
 		| "char"								{ CharType }
 		| "void"								{ VoidType }
         | T '+' T                               { SumType $1 $3 }
-
+ObsType	: "Observable" '<' "int" '>'			{ ObsIntType }
+		| "Observable" '<' "char" '>'			{ ObsCharType }
+		| "Observable" '<' "boole" '>'			{ ObsBooleType }
+		
 {
 
 parseError :: [Token] -> a
@@ -206,6 +217,9 @@ data T         = Boole
 				| VoidType
                 | FuncType [T] T
                 | SumType T T
+				| ObsIntType
+				| ObsCharType
+				| ObsBooleType
                 deriving (Show,Eq,Read)
 
 data Token        = TokenVar String
@@ -216,7 +230,8 @@ data Token        = TokenVar String
                 | TokenCB
                 | TokenOC
                 | TokenCC
-                | TokenArrow 
+                | TokenLArrow 
+                | TokenRArrow 
                 | TokenBoole
                 | TokenIntT
                 | TokenCharT
@@ -239,6 +254,7 @@ data Token        = TokenVar String
 				| TokenThis
 				| TokenTrue
 				| TokenFalse
+				| TokenObservable
                 deriving (Show)
 
 type TyContext      = [(Char,T)]
@@ -259,7 +275,8 @@ lexer ('=':cs) = TokenColon : lexer cs --let prox1 = head cs;
 --				    TokenAtrib : lexer cs
 --				 else
 --                    TokenColon : lexer cs
-lexer ('>':cs) = TokenArrow : lexer cs
+lexer ('>':cs) = TokenRArrow : lexer cs
+lexer ('<':cs) = TokenLArrow : lexer cs
 lexer ('+':cs) = TokenPlus : lexer cs
 lexer (';':cs) = TokenDotComma : lexer cs
 lexer (',':cs) = TokenComma : lexer cs
@@ -285,6 +302,9 @@ lexStr cs = case span isAlpha cs of
                 ("this", rest)       -> TokenThis : lexer rest
                 ("true", rest)       -> TokenTrue : lexer rest
                 ("false", rest)       -> TokenFalse : lexer rest
+                ("Observable", rest)      -> TokenObservable : lexer rest
+                --("Observablechar", rest)      -> TokenObsCharT : lexer rest
+                --("Observableboole", rest)      -> TokenObsBooleT : lexer rest
 				
                 (var, rest)          -> TokenVar var : lexer rest
                 

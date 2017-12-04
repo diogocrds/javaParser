@@ -1,12 +1,13 @@
 {  
-	class Observable {
+	class obs {
 		int x = 2;
 		int y = 3;
 		funcA(int p) {
 			return p;
 		}
 		funB() {
-			int x = 2;
+			Observable<int> x = getDataA();
+			Observable<char> x = getDataB().onErrorResumeNext(getFallbackForB());
 		}
 	}
 }
